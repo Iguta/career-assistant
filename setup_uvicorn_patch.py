@@ -15,26 +15,41 @@ from pathlib import Path
 import re
 
 def find_uvicorn_compat_file():
-    """Find the uvicorn _compat.py file in the virtual environment."""
+    """Find the uvicorn _compat.py file in the virtual environment or system Python."""
+    # First, try to find it by importing uvicorn (most reliable)
+    try:
+        import uvicorn
+        import inspect
+        uvicorn_path = Path(inspect.getfile(uvicorn))
+        compat_file = uvicorn_path.parent / '_compat.py'
+        if compat_file.exists():
+            return compat_file
+    except Exception as e:
+        print(f"   Note: Could not import uvicorn to find path: {e}")
+    
     # Check if we're in a virtual environment
-    if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+    is_venv = hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix)
+    
+    if is_venv:
         # We're in a virtual environment
-        venv_path = Path(sys.prefix)
+        base_path = Path(sys.prefix)
     else:
-        # Try to find venv in current directory
-        venv_path = Path.cwd() / 'venv'
-        if not venv_path.exists():
-            print("⚠️  Warning: Could not find virtual environment.")
-            print("   Please activate your virtual environment first, or run this from the project root.")
-            return None
+        # System Python installation (like in Docker)
+        base_path = Path(sys.prefix)
     
     # Try multiple possible paths
     possible_paths = [
-        # Windows
-        venv_path / 'Lib' / 'site-packages' / 'uvicorn' / '_compat.py',
-        # Unix/Mac
-        venv_path / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages' / 'uvicorn' / '_compat.py',
-        venv_path / 'lib' / 'site-packages' / 'uvicorn' / '_compat.py',
+        # Windows venv
+        base_path / 'Lib' / 'site-packages' / 'uvicorn' / '_compat.py',
+        # Unix/Mac venv or system Python
+        base_path / 'lib' / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages' / 'uvicorn' / '_compat.py',
+        base_path / 'lib' / 'site-packages' / 'uvicorn' / '_compat.py',
+        # System Python (Docker/Unix) - common locations
+        Path('/usr/local/lib') / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages' / 'uvicorn' / '_compat.py',
+        Path('/usr/lib') / f'python{sys.version_info.major}.{sys.version_info.minor}' / 'site-packages' / 'uvicorn' / '_compat.py',
+        # Also try with site-packages directly
+        Path('/usr/local/lib/python3.13/site-packages/uvicorn/_compat.py'),
+        Path('/usr/local/lib/python3.12/site-packages/uvicorn/_compat.py'),
     ]
     
     for path in possible_paths:
@@ -177,10 +192,14 @@ def main():
     if not compat_file:
         print("❌ Could not find uvicorn _compat.py file.")
         print()
+        print("Tried to find uvicorn in:")
+        print(f"  - sys.prefix: {sys.prefix}")
+        print(f"  - System paths: /usr/local/lib/python{sys.version_info.major}.{sys.version_info.minor}/site-packages/")
+        print()
         print("Please ensure:")
-        print("1. You have activated your virtual environment")
-        print("2. You have installed dependencies: pip install -r requirements.txt")
-        print("3. You are running this script from the project root directory")
+        print("1. Uvicorn is installed: pip install uvicorn")
+        print("2. If in a virtual environment, make sure it's activated")
+        print("3. If in Docker, uvicorn should be installed in the system Python")
         sys.exit(1)
     
     if patch_uvicorn_compat(compat_file):

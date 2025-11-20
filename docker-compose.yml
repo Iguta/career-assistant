@@ -1,0 +1,21 @@
+services:
+  career-assistant:
+    build: .
+    container_name: career-assistant
+    ports:
+      - "7860:7860"  # Gradio
+      - "8888:8888"  # Jupyter Lab
+    volumes:
+      # Mount your .env file (create it first!)
+      - ./.env:/app/.env:ro
+      # Mount your CV and background files
+      - ./cv.pdf:/app/cv.pdf:ro
+      - ./background.txt:/app/background.txt:ro
+      # Mount the notebook so changes persist
+      - ./Lab1.ipynb:/app/Lab1.ipynb
+      # Mount Jupyter data directory for persistence
+      - ./jupyter_data:/root/.jupyter
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+

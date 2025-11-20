@@ -23,8 +23,19 @@ When you run the notebook, Gradio automatically launches a web interface in your
 
 ## 🛠️ Prerequisites
 
+**Choose one setup method:**
+
+### For Docker Setup (Recommended):
+- **Docker Desktop** - [Download here](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
 - **Git** - Version control system ([Download Git](https://git-scm.com/downloads))
-- **Python 3.8 or higher** - Programming language runtime
+- **OpenAI API key** - ([Get one here](https://platform.openai.com/api-keys))
+- **Pushover account** - For receiving notifications (see setup instructions below)
+- **A PDF resume/CV file** - Your resume in PDF format
+- **A background information text file** - Additional context about your background
+
+### For Manual Setup:
+- **Git** - Version control system ([Download Git](https://git-scm.com/downloads))
+- **Python 3.12 or higher** - Programming language runtime (required for `openai-agents` package)
 - **OpenAI API key** - ([Get one here](https://platform.openai.com/api-keys))
 - **Pushover account** - For receiving notifications (see setup instructions below)
 - **A PDF resume/CV file** - Your resume in PDF format
@@ -32,6 +43,113 @@ When you run the notebook, Gradio automatically launches a web interface in your
 - **Code Editor** - Use your favorite editor like [Cursor](https://cursor.sh/) or [VS Code](https://code.visualstudio.com/)
 
 ## 🚀 Setup Instructions
+
+### Option A: Docker Setup (Recommended - No Compatibility Issues!)
+
+Docker ensures everyone runs the exact same environment, eliminating Python version and dependency compatibility issues.
+
+#### Prerequisites for Docker:
+- **Docker Desktop** - [Download for Windows/Mac](https://www.docker.com/products/docker-desktop/) or install Docker Engine for Linux
+- **Docker Compose** - Usually included with Docker Desktop
+
+#### Quick Start with Docker:
+
+1. **Clone the repository**:
+   ```bash
+   git clone <repository-url>
+   cd career-assistant
+   ```
+
+2. **Create your `.env` file** (if you haven't already):
+   ```bash
+   # Create .env file with your API keys
+   OPENAI_API_KEY=your_openai_api_key_here
+   PUSHOVER_USER=your_pushover_user_key_here
+   PUSHOVER_TOKEN=your_pushover_api_token_here
+   ```
+
+3. **Ensure you have your files**:
+   - `cv.pdf` - Your resume/CV
+   - `background.txt` - Your background information
+
+4. **Build and run with Docker Compose**:
+   ```bash
+   docker-compose up --build
+   ```
+
+5. **Access the application**:
+   - **Jupyter Lab**: Open http://localhost:8888 in your browser
+   - **Gradio** (after running notebook): Will be available at http://localhost:7860
+
+6. **Test if it's working**:
+   - Open Jupyter Lab at http://localhost:8888
+   - Open `Lab1.ipynb` and run the first cell
+   - If imports work without errors, Docker setup is successful!
+   - See `TEST_DOCKER.md` for detailed testing instructions
+
+#### Docker Commands:
+
+```bash
+# Build the image
+docker-compose build
+
+# Start the container
+docker-compose up
+
+# Start in background (detached mode)
+docker-compose up -d
+
+# Stop the container
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild after changes
+docker-compose up --build
+```
+
+#### Manual Docker (without docker-compose):
+
+```bash
+# Build the image
+docker build -t career-assistant .
+
+# Run the container
+docker run -it --rm \
+  -p 8888:8888 \
+  -p 7860:7860 \
+  -v $(pwd)/.env:/app/.env:ro \
+  -v $(pwd)/cv.pdf:/app/cv.pdf:ro \
+  -v $(pwd)/background.txt:/app/background.txt:ro \
+  -v $(pwd)/Lab1.ipynb:/app/Lab1.ipynb \
+  career-assistant
+```
+
+**Benefits of Docker:**
+- ✅ No Python version issues - uses Python 3.13
+- ✅ No dependency conflicts - isolated environment
+- ✅ Works the same on Windows, Mac, and Linux
+- ✅ Easy to share and deploy
+- ✅ No need to run setup scripts manually
+
+---
+
+### Option B: Manual Setup (Local Installation)
+
+### 0. Verify Python Version
+
+**Important**: This project requires Python 3.12 or higher. Check your Python version:
+
+```bash
+python --version
+# or
+python3 --version
+```
+
+If you see Python 3.11 or earlier, you'll need to upgrade:
+- **Windows/macOS**: Download Python 3.12+ from [python.org](https://www.python.org/downloads/)
+- **Linux**: Use your package manager to install Python 3.12+
 
 ### 1. Create a Python Virtual Environment
 
@@ -171,6 +289,9 @@ career-assistant/
 ├── Lab1.ipynb              # Main Jupyter notebook
 ├── requirements.txt         # Python dependencies
 ├── setup_uvicorn_patch.py  # Setup script for uvicorn compatibility patch
+├── Dockerfile              # Docker image configuration
+├── docker-compose.yml      # Docker Compose configuration
+├── .dockerignore           # Files to exclude from Docker build
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this - not tracked by git)
 ├── .gitignore              # Git ignore rules
@@ -183,6 +304,21 @@ career-assistant/
 - **ModuleNotFoundError**: Make sure your virtual environment is activated and you've run `pip install -r requirements.txt`
 - **API Key Error**: Verify your `.env` file exists and contains valid `OPENAI_API_KEY`, `PUSHOVER_USER`, and `PUSHOVER_TOKEN`
 - **File Not Found**: Check that `cv.pdf` (or `Resume.pdf`) and `background.txt` exist in the project directory
+- **KeyError: ~TContext when importing agents**: 
+  - This error occurs when using Python 3.11 or earlier
+  - **Solution**: The `openai-agents` package requires **Python 3.12 or higher**
+  - Upgrade Python to 3.12+ and recreate your virtual environment:
+    ```bash
+    # Check your Python version
+    python --version
+    
+    # If it's < 3.12, install Python 3.12+ from python.org
+    # Then recreate your virtual environment:
+    python -m venv venv
+    venv\Scripts\activate  # Windows
+    # or: source venv/bin/activate  # macOS/Linux
+    pip install -r requirements.txt
+    ```
 - **Uvicorn/Gradio Launch Error (TypeError: loop_factory)**: 
   - This is a compatibility issue between `nest-asyncio` and `uvicorn` on Python 3.12+
   - **Solution 1 (Automated)**: Run `python setup_uvicorn_patch.py` after installing dependencies
@@ -194,6 +330,12 @@ career-assistant/
   - Make sure you're logged into the Pushover app on your device
   - Check that your Pushover account is active (free trial or paid)
 - **Git Issues**: Make sure Git is installed and accessible from your command line (`git --version`)
+- **Docker Issues**: 
+  - Make sure Docker Desktop is running
+  - Check Docker version: `docker --version` and `docker-compose --version`
+  - If you get permission errors on Linux, add your user to the docker group: `sudo usermod -aG docker $USER`
+  - If ports are already in use, change the port mappings in `docker-compose.yml`
+  - If the container won't start, check logs: `docker-compose logs`
 
 ## 🔨 Manual Patching Instructions (Fallback)
 
@@ -281,6 +423,7 @@ Save the file and try running your Gradio application again. The error should be
 - The Gradio interface will display a local URL when launched (typically `http://127.0.0.1:7860`)
 - Pushover notifications are optional - the app will work without them, but you won't receive alerts about recruiter interest or unanswered questions
 - You can use any code editor you prefer - Cursor and VS Code are both excellent choices
+- **Python Version Requirement**: This project requires **Python 3.12 or higher**. The `openai-agents` package uses typing features that are only available in Python 3.12+. If you're using Python 3.11 or earlier, you'll get a `KeyError: ~TContext` error when importing the agents module.
 - **Python 3.12+ Compatibility**: If you're using Python 3.12 or 3.13+, you must run `setup_uvicorn_patch.py` after installing dependencies. This patches uvicorn to work with `nest-asyncio` (required for Jupyter notebooks). The patch is safe and only affects the compatibility layer.
 
 ## 📄 License

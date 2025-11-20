@@ -1,0 +1,48 @@
+# Virtual environment
+venv/
+env/
+ENV/
+.venv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Documentation (optional - uncomment if you don't want to include)
+# README.md
+
+# Environment files (users should mount these)
+# .env
+
+# Large files (optional - uncomment if you have large files)
+# *.pdf
+# *.zip
+# *.tar.gz
+
