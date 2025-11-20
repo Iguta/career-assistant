@@ -66,6 +66,28 @@ This will install:
 - `gradio` - Web UI framework
 - `pypdf` - PDF text extraction
 - `python-dotenv` - Environment variable management
+- `nest-asyncio` - For nested event loops in Jupyter notebooks
+- `openai-agents` - OpenAI Agents SDK
+
+### 2.5. Apply Uvicorn Compatibility Patch (Important!)
+
+**⚠️ Required for Python 3.12+ users:** Due to a compatibility issue between `nest-asyncio` and `uvicorn`, you need to apply a patch after installing dependencies. This is especially important if you're using Python 3.13+.
+
+Run the setup script:
+
+```bash
+python setup_uvicorn_patch.py
+```
+
+**What this does:**
+- Patches uvicorn to work with `nest-asyncio` (required for Jupyter notebooks)
+- Fixes the `loop_factory` parameter compatibility issue
+- Only needs to be run once after installing dependencies
+
+**Note:** If you see "✅ Uvicorn is already patched!", you're all set. If you encounter errors, make sure:
+1. Your virtual environment is activated
+2. You've run `pip install -r requirements.txt` first
+3. You're running the script from the project root directory
 
 ### 3. Set Up Pushover (Optional but Recommended)
 
@@ -127,13 +149,18 @@ Ensure you have the following files in the project directory:
 
 4. **Make sure your virtual environment is activated** and has all dependencies installed
 
-5. **Run all cells in the notebook**
+5. **Apply the uvicorn patch** (if you haven't already):
+   ```bash
+   python setup_uvicorn_patch.py
+   ```
 
-6. **The Gradio interface will launch automatically** in your browser
+6. **Run all cells in the notebook**
 
-7. **Enter recruiter questions** in the interface to get AI-generated responses based on your profile
+7. **The Gradio interface will launch automatically** in your browser
 
-8. **Receive notifications** via Pushover when:
+8. **Enter recruiter questions** in the interface to get AI-generated responses based on your profile
+
+9. **Receive notifications** via Pushover when:
    - Recruiters express interest in your profile
    - Questions are asked that you can't answer (so you can follow up)
 
@@ -141,13 +168,14 @@ Ensure you have the following files in the project directory:
 
 ```
 career-assistant/
-├── Lab1.ipynb          # Main Jupyter notebook
-├── requirements.txt     # Python dependencies
-├── README.md           # This file
-├── .env                # Environment variables (create this - not tracked by git)
-├── .gitignore          # Git ignore rules
-├── cv.pdf              # Your resume/CV (or Resume.pdf)
-└── background.txt      # Background information
+├── Lab1.ipynb              # Main Jupyter notebook
+├── requirements.txt         # Python dependencies
+├── setup_uvicorn_patch.py  # Setup script for uvicorn compatibility patch
+├── README.md               # This file
+├── .env                    # Environment variables (create this - not tracked by git)
+├── .gitignore              # Git ignore rules
+├── cv.pdf                  # Your resume/CV (or Resume.pdf)
+└── background.txt          # Background information
 ```
 
 ## 🔧 Troubleshooting
@@ -155,6 +183,11 @@ career-assistant/
 - **ModuleNotFoundError**: Make sure your virtual environment is activated and you've run `pip install -r requirements.txt`
 - **API Key Error**: Verify your `.env` file exists and contains valid `OPENAI_API_KEY`, `PUSHOVER_USER`, and `PUSHOVER_TOKEN`
 - **File Not Found**: Check that `cv.pdf` (or `Resume.pdf`) and `background.txt` exist in the project directory
+- **Uvicorn/Gradio Launch Error (TypeError: loop_factory)**: 
+  - This is a compatibility issue between `nest-asyncio` and `uvicorn` on Python 3.12+
+  - **Solution**: Run `python setup_uvicorn_patch.py` after installing dependencies
+  - Make sure your virtual environment is activated when running the patch script
+  - If the error persists, check that you're using Python 3.12 or higher
 - **Pushover Notifications Not Working**: 
   - Verify your Pushover credentials are correct in the `.env` file
   - Make sure you're logged into the Pushover app on your device
@@ -168,6 +201,7 @@ career-assistant/
 - The Gradio interface will display a local URL when launched (typically `http://127.0.0.1:7860`)
 - Pushover notifications are optional - the app will work without them, but you won't receive alerts about recruiter interest or unanswered questions
 - You can use any code editor you prefer - Cursor and VS Code are both excellent choices
+- **Python 3.12+ Compatibility**: If you're using Python 3.12 or 3.13+, you must run `setup_uvicorn_patch.py` after installing dependencies. This patches uvicorn to work with `nest-asyncio` (required for Jupyter notebooks). The patch is safe and only affects the compatibility layer.
 
 ## 📄 License
 
