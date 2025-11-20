@@ -110,7 +110,7 @@ Ensure you have the following files in the project directory:
    - [VS Code](https://code.visualstudio.com/) - Popular code editor
    - Or any other editor you prefer
 
-3. **Open the Jupyter notebook** `Lab2.ipynb` (or `lab_1.ipynb`)
+3. **Open the Jupyter notebook** `Lab1.ipynb`
 
 4. **Make sure your virtual environment is activated** and has all dependencies installed
 
@@ -128,7 +128,7 @@ Ensure you have the following files in the project directory:
 
 ```
 career-assistant/
-├── Lab2.ipynb          # Main Jupyter notebook
+├── Lab1.ipynb          # Main Jupyter notebook
 ├── requirements.txt     # Python dependencies
 ├── README.md           # This file
 ├── .env                # Environment variables (create this - not tracked by git)
