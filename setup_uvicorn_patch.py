@@ -57,8 +57,7 @@ def patch_uvicorn_compat(compat_file):
     
     original_content = content
     
-    # Patch for Python 3.13+
-    python_313_pattern = r'(if sys\.version_info >= \(3, 13\):.*?)(?=elif sys\.version_info >= \(3, 12\):|$)'
+    # Python 3.13+ replacement
     python_313_replacement = '''if sys.version_info >= (3, 13):
     # Workaround for nest_asyncio compatibility: nest_asyncio patches asyncio.run()
     # and the patched version doesn't support loop_factory parameter.
@@ -72,17 +71,10 @@ def patch_uvicorn_compat(compat_file):
     ) -> _T:
         # Call asyncio.run() without loop_factory to work with nest_asyncio's patched version
         # Python 3.13+ still supports loop_factory, but nest_asyncio's patch doesn't
-        return asyncio.run(main, debug=debug)
-'''
+        return asyncio.run(main, debug=debug)'''
     
-    # Try regex replacement first
-    if re.search(python_313_pattern, content, re.DOTALL):
-        content = re.sub(python_313_pattern, python_313_replacement, content, flags=re.DOTALL)
-    
-    # If that didn't work, try simple string replacement
-    if 'asyncio_run = asyncio.run' in content and 'elif sys.version_info >= (3, 12):' in content:
-        # Replace the simple assignment for Python 3.12
-        python_312_replacement = '''elif sys.version_info >= (3, 12):
+    # Python 3.12+ replacement
+    python_312_replacement = '''elif sys.version_info >= (3, 12):
     # For Python 3.12, nest_asyncio may also patch asyncio.run(), so we need
     # a wrapper that handles loop_factory compatibility
     def asyncio_run(
@@ -96,48 +88,45 @@ def patch_uvicorn_compat(compat_file):
             return asyncio.run(main, debug=debug, loop_factory=loop_factory)
         except TypeError:
             # nest_asyncio's patched version doesn't support loop_factory
-            return asyncio.run(main, debug=debug)
-'''
-        content = content.replace(
-            'elif sys.version_info >= (3, 12):\n    asyncio_run = asyncio.run',
-            python_312_replacement
-        )
+            return asyncio.run(main, debug=debug)'''
     
-    # Manual replacement for Python 3.13+ if regex didn't work
-    if 'if sys.version_info >= (3, 13):' in content and 'Workaround for nest_asyncio' not in content:
-        # Find and replace the Python 3.13 section manually
-        lines = content.split('\n')
-        new_lines = []
-        i = 0
-        while i < len(lines):
-            if lines[i].strip() == 'if sys.version_info >= (3, 13):':
-                # Add our replacement
-                new_lines.extend(python_313_replacement.strip().split('\n'))
-                # Skip the old section until we hit the next elif/else
-                i += 1
-                indent_level = len(lines[i]) - len(lines[i].lstrip()) if i < len(lines) else 0
-                while i < len(lines):
-                    line_stripped = lines[i].strip()
-                    if not line_stripped or line_stripped.startswith('#'):
-                        i += 1
-                        continue
-                    if line_stripped.startswith('elif ') or line_stripped.startswith('else:'):
-                        break
-                    if line_stripped.startswith('def ') or line_stripped.startswith('return '):
-                        # Skip function definition lines
-                        i += 1
-                        while i < len(lines) and (not lines[i].strip() or 
-                                                  lines[i].startswith(' ') or 
-                                                  lines[i].startswith('\t')):
-                            i += 1
-                        continue
-                    if len(lines[i]) - len(lines[i].lstrip()) <= indent_level and line_stripped:
-                        break
-                    i += 1
-                continue
-            new_lines.append(lines[i])
-            i += 1
-        content = '\n'.join(new_lines)
+    # Try various patterns that might exist in different uvicorn versions
+    patterns_to_replace = [
+        # Pattern 1: Python 3.13 with simple assignment
+        (r'if sys\.version_info >= \(3, 13\):\s*\n\s*asyncio_run = asyncio\.run', 
+         python_313_replacement),
+        # Pattern 2: Python 3.12 with simple assignment (elif)
+        (r'elif sys\.version_info >= \(3, 12\):\s*\n\s*asyncio_run = asyncio\.run', 
+         python_312_replacement),
+        # Pattern 3: Python 3.12 with simple assignment (if - handles case where 3.13 doesn't exist)
+        (r'if sys\.version_info >= \(3, 12\):\s*\n\s*asyncio_run = asyncio\.run', 
+         python_312_replacement.replace('elif', 'if')),
+    ]
+    
+    # Try regex replacements
+    for pattern, replacement in patterns_to_replace:
+        if re.search(pattern, content, re.MULTILINE):
+            print(f"🔍 Found pattern to patch: {pattern[:50]}...")
+            content = re.sub(pattern, replacement, content, flags=re.MULTILINE)
+            break
+    
+    # If regex didn't work, try simple string replacements
+    if content == original_content:
+        # Try exact string matches with different whitespace variations
+        replacements = [
+            ('if sys.version_info >= (3, 13):\n    asyncio_run = asyncio.run', python_313_replacement),
+            ('elif sys.version_info >= (3, 12):\n    asyncio_run = asyncio.run', python_312_replacement),
+            ('if sys.version_info >= (3, 12):\n    asyncio_run = asyncio.run', python_312_replacement.replace('elif', 'if')),
+            # Handle tabs
+            ('if sys.version_info >= (3, 13):\n\tasyncio_run = asyncio.run', python_313_replacement.replace('    ', '\t')),
+            ('elif sys.version_info >= (3, 12):\n\tasyncio_run = asyncio.run', python_312_replacement.replace('    ', '\t').replace('elif', 'elif')),
+        ]
+        
+        for old, new in replacements:
+            if old in content:
+                print(f"🔍 Found exact match to patch...")
+                content = content.replace(old, new)
+                break
     
     # Only write if content changed
     if content != original_content:
@@ -147,9 +136,36 @@ def patch_uvicorn_compat(compat_file):
         print("✅ Successfully patched uvicorn for nest_asyncio compatibility!")
         return True
     else:
-        print("⚠️  Warning: Could not find the section to patch.")
-        print("   The uvicorn version may have a different structure.")
-        print("   You may need to manually apply the patch.")
+        # Diagnostic: show what we found
+        print("⚠️  Warning: Could not find the expected section to patch.")
+        print()
+        print("Let's check what's actually in the file around the Python version checks:")
+        print()
+        
+        lines = content.split('\n')
+        found_sections = []
+        for i, line in enumerate(lines):
+            if 'sys.version_info' in line and ('3, 12' in line or '3, 13' in line):
+                # Show context
+                start = max(0, i - 1)
+                end = min(len(lines), i + 3)
+                section = '\n'.join(lines[start:end])
+                found_sections.append((i, section))
+        
+        if found_sections:
+            print("Found these sections:")
+            for line_num, section in found_sections:
+                print(f"  Line {line_num + 1}:")
+                for line in section.split('\n'):
+                    print(f"    {line}")
+                print()
+        else:
+            print("  No Python 3.12+ version checks found in the file.")
+            print("  This might be an older version of uvicorn that doesn't need patching.")
+        
+        print()
+        print("The file structure might be different than expected.")
+        print("You may need to manually apply the patch or check the uvicorn version.")
         return False
 
 def main():
@@ -173,6 +189,12 @@ def main():
     else:
         print()
         print("❌ Failed to apply patch. Please check the error messages above.")
+        print()
+        print("Troubleshooting steps:")
+        print("1. Check uvicorn version: pip show uvicorn")
+        print("2. Try upgrading uvicorn: pip install --upgrade uvicorn")
+        print("3. Check Python version: python --version")
+        print("4. If you're on Python < 3.12, you may not need this patch")
         sys.exit(1)
 
 if __name__ == '__main__':

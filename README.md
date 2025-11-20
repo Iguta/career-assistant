@@ -185,14 +185,94 @@ career-assistant/
 - **File Not Found**: Check that `cv.pdf` (or `Resume.pdf`) and `background.txt` exist in the project directory
 - **Uvicorn/Gradio Launch Error (TypeError: loop_factory)**: 
   - This is a compatibility issue between `nest-asyncio` and `uvicorn` on Python 3.12+
-  - **Solution**: Run `python setup_uvicorn_patch.py` after installing dependencies
+  - **Solution 1 (Automated)**: Run `python setup_uvicorn_patch.py` after installing dependencies
   - Make sure your virtual environment is activated when running the patch script
+  - **Solution 2 (Manual)**: If the automated script fails, see "Manual Patching Instructions" below
   - If the error persists, check that you're using Python 3.12 or higher
 - **Pushover Notifications Not Working**: 
   - Verify your Pushover credentials are correct in the `.env` file
   - Make sure you're logged into the Pushover app on your device
   - Check that your Pushover account is active (free trial or paid)
 - **Git Issues**: Make sure Git is installed and accessible from your command line (`git --version`)
+
+## 🔨 Manual Patching Instructions (Fallback)
+
+If the automated `setup_uvicorn_patch.py` script fails, you can manually patch uvicorn:
+
+### Step 1: Locate the File
+
+Find the uvicorn `_compat.py` file in your virtual environment:
+
+**Windows:**
+```
+venv\Lib\site-packages\uvicorn\_compat.py
+```
+
+**macOS/Linux:**
+```
+venv/lib/python3.x/site-packages/uvicorn/_compat.py
+```
+
+### Step 2: Open and Edit the File
+
+Open `_compat.py` in your text editor and find the section for Python 3.12+ or 3.13+.
+
+### Step 3: Replace the Code
+
+**For Python 3.13+**, find this line:
+```python
+if sys.version_info >= (3, 13):
+    asyncio_run = asyncio.run
+```
+
+Replace it with:
+```python
+if sys.version_info >= (3, 13):
+    # Workaround for nest_asyncio compatibility: nest_asyncio patches asyncio.run()
+    # and the patched version doesn't support loop_factory parameter.
+    # This wrapper accepts loop_factory for compatibility but ignores it when calling
+    # the potentially-patched asyncio.run().
+    def asyncio_run(
+        main: Coroutine[Any, Any, _T],
+        *,
+        debug: bool = False,
+        loop_factory: Callable[[], asyncio.AbstractEventLoop] | None = None,
+    ) -> _T:
+        # Call asyncio.run() without loop_factory to work with nest_asyncio's patched version
+        # Python 3.13+ still supports loop_factory, but nest_asyncio's patch doesn't
+        return asyncio.run(main, debug=debug)
+```
+
+**For Python 3.12**, find this line:
+```python
+elif sys.version_info >= (3, 12):
+    asyncio_run = asyncio.run
+```
+
+Replace it with:
+```python
+elif sys.version_info >= (3, 12):
+    # For Python 3.12, nest_asyncio may also patch asyncio.run(), so we need
+    # a wrapper that handles loop_factory compatibility
+    def asyncio_run(
+        main: Coroutine[Any, Any, _T],
+        *,
+        debug: bool = False,
+        loop_factory: Callable[[], asyncio.AbstractEventLoop] | None = None,
+    ) -> _T:
+        # Try to use loop_factory if nest_asyncio hasn't patched asyncio.run()
+        try:
+            return asyncio.run(main, debug=debug, loop_factory=loop_factory)
+        except TypeError:
+            # nest_asyncio's patched version doesn't support loop_factory
+            return asyncio.run(main, debug=debug)
+```
+
+### Step 4: Save and Test
+
+Save the file and try running your Gradio application again. The error should be resolved.
+
+**Note**: If you reinstall uvicorn or recreate your virtual environment, you'll need to apply this patch again.
 
 ## 📝 Notes
 
