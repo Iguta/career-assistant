@@ -8,6 +8,19 @@ A career assistant application that uses ChatGPT to answer recruiter questions b
 - **Interactive Q&A Interface**: Gradio-based web UI for recruiter questions
 - **ChatGPT Integration**: Uses OpenAI's GPT models to generate professional responses
 
+## 🎨 About Gradio
+
+[Gradio](https://www.gradio.app/) is an open-source Python library that makes it easy to build and share interactive web interfaces for machine learning models and Python functions. In this project, Gradio provides the user-friendly web interface where recruiters can ask questions and receive AI-generated responses in real-time.
+
+**Key benefits of Gradio:**
+- **Easy to use**: Create web UIs with just a few lines of Python code
+- **No frontend knowledge required**: Build beautiful interfaces without HTML, CSS, or JavaScript
+- **Automatic sharing**: Gradio can create public links to share your interface (via `share=True`)
+- **Real-time streaming**: Supports streaming responses for a smooth user experience
+- **Built-in components**: Pre-built components like chatbots, text inputs, and buttons
+
+When you run the notebook, Gradio automatically launches a web interface in your browser where you can interact with the career assistant. The interface is accessible locally and can be shared publicly if needed.
+
 ## 🛠️ Prerequisites
 
 - **Git** - Version control system ([Download Git](https://git-scm.com/downloads))
