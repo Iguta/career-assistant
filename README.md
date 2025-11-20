@@ -111,6 +111,7 @@ docker-compose up --build
 
 #### Manual Docker (without docker-compose):
 
+**On Linux/macOS:**
 ```bash
 # Build the image
 docker build -t career-assistant .
@@ -126,12 +127,31 @@ docker run -it --rm \
   career-assistant
 ```
 
+**On Windows (PowerShell):**
+```powershell
+# Build the image
+docker build -t career-assistant .
+
+# Run the container
+docker run -it --rm `
+  -p 8888:8888 `
+  -p 7860:7860 `
+  -v ${PWD}/.env:/app/.env:ro `
+  -v ${PWD}/cv.pdf:/app/cv.pdf:ro `
+  -v ${PWD}/background.txt:/app/background.txt:ro `
+  -v ${PWD}/Lab1.ipynb:/app/Lab1.ipynb `
+  career-assistant
+```
+
+**Note**: Using `docker-compose` is recommended as it handles paths automatically across all platforms.
+
 **Benefits of Docker:**
 - ✅ No Python version issues - uses Python 3.13
 - ✅ No dependency conflicts - isolated environment
 - ✅ Works the same on Windows, Mac, and Linux
 - ✅ Easy to share and deploy
-- ✅ No need to run setup scripts manually
+- ✅ **Uvicorn patch applied automatically** - no manual setup needed
+- ✅ Consistent environment for all users
 
 ---
 
@@ -252,6 +272,19 @@ Ensure you have the following files in the project directory:
 
 ## 📖 Usage
 
+### Using Docker (Recommended):
+
+1. **Follow the Docker setup instructions** above to build and start the container
+2. **Open Jupyter Lab** at http://localhost:8888
+3. **Open the notebook** `Lab1.ipynb` in Jupyter Lab
+4. **Run all cells** in the notebook
+5. **The Gradio interface will launch automatically** when you run the Gradio cell
+6. **Enter recruiter questions** in the interface to get AI-generated responses
+
+**Note**: With Docker, the uvicorn patch is applied automatically during the build - no manual steps needed!
+
+### Using Manual Setup:
+
 1. **Clone the repository** (if you haven't already):
    ```bash
    git clone <repository-url>
@@ -292,6 +325,7 @@ career-assistant/
 ├── Dockerfile              # Docker image configuration
 ├── docker-compose.yml      # Docker Compose configuration
 ├── .dockerignore           # Files to exclude from Docker build
+├── TEST_DOCKER.md          # Detailed Docker testing instructions
 ├── README.md               # This file
 ├── .env                    # Environment variables (create this - not tracked by git)
 ├── .gitignore              # Git ignore rules
